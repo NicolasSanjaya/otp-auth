@@ -5,12 +5,12 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg"); // Impor Pool dari pg
+import cors from "cors"; // Impor CORS untuk mengatasi masalah CORS
 require("dotenv").config();
-
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
 // 2. Inisialisasi Aplikasi Express
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 // 3. Konfigurasi Koneksi Database (Neon)
