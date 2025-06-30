@@ -7,6 +7,8 @@ const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg"); // Impor Pool dari pg
 require("dotenv").config();
 
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
+
 // 2. Inisialisasi Aplikasi Express
 const app = express();
 app.use(bodyParser.json());
