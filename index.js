@@ -14,6 +14,9 @@ app.use(bodyParser.json());
 // 3. Konfigurasi Koneksi Database (Neon)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // kadang perlu di Railway/Heroku
+  },
 });
 
 // 4. Konfigurasi Rate Limiter
