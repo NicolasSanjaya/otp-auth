@@ -5,13 +5,15 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg"); // Impor Pool dari pg
-import cors from "cors"; // Impor CORS untuk mengatasi masalah CORS
+const cors = require("cors"); // Impor CORS untuk mengatasi masalah CORS
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 // 2. Inisialisasi Aplikasi Express
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 // 3. Konfigurasi Koneksi Database (Neon)
 const pool = new Pool({
@@ -187,6 +189,14 @@ app.post("/verify-otp", async (req, res) => {
       expiresIn: "1h",
     });
 
+    // Simpan token di HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true, // Cookie tidak bisa diakses oleh JavaScript sisi klien
+      secure: process.env.NODE_ENV === "production", // Hanya kirim melalui HTTPS di lingkungan produksi
+      sameSite: "strict", // Proteksi dari serangan CSRF
+      maxAge: 3600000 * 24, // Masa berlaku cookie (1 jam dalam milidetik)
+    });
+
     res.status(200).json({
       message: "Login berhasil",
       token: token,
@@ -199,17 +209,26 @@ app.post("/verify-otp", async (req, res) => {
 
 // Middleware dan route /profile (Tetap sama)
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (token == null) return res.sendStatus(401);
+  // const authHeader = req.headers["authorization"];
+  // const token = authHeader && authHeader.split(" ")[1];
+  // Ambil token dari cookie yang dikirim oleh browser
+  const token = req.cookies.token;
+  if (token == null)
+    return res.sendStatus(401).json({ message: "Token tidak ditemukan" });
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
     next();
   });
 }
+
 app.get("/profile", authenticateToken, (req, res) => {
   res.json({ message: `Selamat datang, ${req.user.email}`, user: req.user });
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ message: "Logout berhasil." });
 });
 
 // Jalankan Server
